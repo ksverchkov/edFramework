@@ -57,7 +57,7 @@ edFramework.addComponent('userComponent', '<p>User: {{name}}</p>');
 Initialize the framework using the `init()` method:
 ```javascript
 edFramework.init();
-``
+```
 
 ## Routing
 Routing allows you to define different paths and associate them with templates and optional handler functions. The `addRoute()` method is used to add routes:
