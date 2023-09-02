@@ -4,32 +4,47 @@ const edFramework = {
   addons: [],
   handlers: {},
   components: {},
+  state: {},
+  
+  useState(initialValue) {
+    const key = Object.keys(this.state).length;
+    if (!this.state[key]) {
+      this.state[key] = initialValue;
+    }
 
-  addRoute: function(path, templateName, handler) {
+    const setState = (newValue) => {
+      this.state[key] = newValue;
+      this.render();
+    };
+
+    return [this.state[key], setState];
+  },
+
+  addRoute(path, templateName, handler) {
     this.routes[path] = {
       template: templateName,
       handler: handler,
     };
   },
 
-  addTemplate: function(templateName, templateContent) {
+  addTemplate(templateName, templateContent) {
     this.templates[templateName] = templateContent;
   },
 
-  addAddon: function(addon) {
+  addAddon(addon) {
     this.addons.push(addon);
   },
 
-  addHandler: function(eventName, handler) {
+  addHandler(eventName, handler) {
     this.handlers[eventName] = handler;
   },
 
-  addComponent: function(componentName, componentContent) {
+  addComponent(componentName, componentContent) {
     this.components[componentName] = componentContent;
   },
 
-  init: function() {
-    this.addons.forEach(function(addon) {
+  init() {
+    this.addons.forEach((addon) => {
       addon.init();
     });
 
@@ -40,7 +55,7 @@ const edFramework = {
     });
   },
 
-  handleRoute: function() {
+  handleRoute() {
     const path = window.location.hash.substring(1);
     const route = this.routes[path];
 
@@ -61,7 +76,7 @@ const edFramework = {
     }
   },
 
-  renderVariables: function(template) {
+  renderVariables(template) {
     const regex = /\{\{(.*?)\}\}/g;
     const matches = template.match(regex);
 
@@ -69,9 +84,13 @@ const edFramework = {
       matches.forEach((match) => {
         const variable = match.slice(2, -2).trim();
 
-        if (edFramework.components[variable]) {
-          const componentTemplate = edFramework.components[variable];
+        if (this.components[variable]) {
+          const componentTemplate = this.components[variable];
           template = template.replace(match, componentTemplate);
+        } else if (variable.startsWith('state[')) {
+          const stateKey = variable.slice(6, -1); // Extract state key
+          const stateValue = this.state[stateKey];
+          template = template.replace(match, stateValue);
         } else {
           const value = eval(variable);
           template = template.replace(match, value);
@@ -82,7 +101,7 @@ const edFramework = {
     return template;
   },
 
-  compileForEach: function(template) {
+  compileForEach(template) {
     const regex = /\{\{#foreach (.*?)\}\}(.*?)\{\{\/foreach\}\}/gs;
     const matches = template.matchAll(regex);
 
@@ -97,14 +116,14 @@ const edFramework = {
     return template;
   },
 
-  compileLoop: function(variable, content) {
+  compileLoop(variable, content) {
     const loopData = eval(variable);
     let compiledLoop = '';
 
     if (Array.isArray(loopData)) {
-      loopData.forEach(function(item) {
-        if (Framework.components[item]) {
-          const componentTemplate = edFramework.components[item];
+      loopData.forEach((item) => {
+        if (this.components[item]) {
+          const componentTemplate = this.components[item];
           compiledLoop += componentTemplate;
         } else {
           const regex = /\{\{(.*?)\}\}/g;
@@ -112,7 +131,7 @@ const edFramework = {
 
           const matches = content.match(regex);
           if (matches) {
-            matches.forEach(function(match) {
+            matches.forEach((match) => {
               const loopVariable = match.slice(2, -2).trim();
               const loopValue = item[loopVariable];
 
@@ -126,5 +145,9 @@ const edFramework = {
     }
 
     return compiledLoop;
+  },
+
+  render() {
+    this.handleRoute(); // Re-render the current route
   },
 };
